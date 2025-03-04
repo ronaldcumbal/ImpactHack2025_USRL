@@ -1,13 +1,15 @@
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple, Union, TypedDict
+from typing import Dict, List, Optional, Tuple, Union, TypedDict
 
 # Define type aliases for readability
 ParagraphID = str
 ParagraphText = str
 ChatMessage = TypedDict("ChatMessage", {"role": str, "content": str})  # Represents a single chat message
 ChatHistory = List[ChatMessage]  # A conversation history between user and assistant
-ProcessedParagraph = Dict[ParagraphID, ChatHistory]  # Now returns ChatHistory instead of AdviceDict
+ParagraphExtractAdvice = TypedDict("ParagraphExtractAdvice", {"extract": str, "advice": str})  # Advice for an extract of a paragraph
+ParagraphAdvice = List[ParagraphExtractAdvice]  # A list of advice for a paragraph
+WholeTextAdvice = Dict[ParagraphID, ParagraphAdvice]  # Advice for the whole text
 ReplyResponse = Tuple[ChatHistory, Union[str, None]]
 
 
@@ -22,7 +24,7 @@ class LLMAdvisor(ABC):
     def process_whole_text(
         self,
         text: Dict[ParagraphID, ParagraphText],
-    ) -> ProcessedParagraph:
+    ) -> WholeTextAdvice:
         """
         Process the entire text and return a dictionary with processed results in a chat format.
         This should be called only once at the beginning. Can be replaced with multiple calls to add_paragraph.
@@ -32,28 +34,26 @@ class LLMAdvisor(ABC):
                 (can be e.g. section number) and the value is the paragraph text. The paragraph ids should be sortable.
 
         Returns:
-            ProcessedParagraph: A dictionary where the key is the paragraph id and the value is a chat history
-                representing the assistant's interaction regarding that paragraph.
+            WholeTextAdvice: A dictionary where the key is the paragraph id and the value is a list of advices relative to an extract of the paragraph.
         """
         pass
 
     @abstractmethod
-    def add_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> ChatHistory:
+    def add_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> ParagraphAdvice:
         """
-        Process and add a single paragraph and return a chat history with the assistant's feedback.
+        Process and add a single paragraph and return advice in a chat format. 
 
         Args:
             paragraph_id (ParagraphID): The paragraph id.
             paragraph (ParagraphText): The paragraph text to be processed.
 
         Returns:
-            ChatHistory: A list of dictionaries representing a chat between the user and the assistant.
-                Each dictionary has the format {"role": "user"/"assistant", "content": "text"}.
+            ParagraphAdvice: A list of advices for an extract of the paragraph.
         """
         pass
 
     @abstractmethod
-    def update_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> ChatHistory:
+    def update_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> ParagraphAdvice:
         """
         Update a paragraph and return a chat history with the assistant's (new) feedback.
         This assumes that the paragraph has already been added.
@@ -65,7 +65,7 @@ class LLMAdvisor(ABC):
             paragraph (ParagraphText): The paragraph text to be processed.
 
         Returns:
-            ChatHistory: A chat history updating the assistant's response based on the changes in the paragraph.
+            ParagraphAdvice: A list of advices for an extract of the paragraph.
         """
         pass
 
@@ -84,6 +84,21 @@ class LLMAdvisor(ABC):
             ReplyResponse: A tuple with:
                 - The chat history with the new response to the user.
                 - An optional updated version of the paragraph text if the user requested a change (None otherwise).
+        """
+        pass
+
+    @abstractmethod
+    def enhance_paragraph(self, paragraph_id: Optional[ParagraphID] = None, paragraph_ids: Optional[List[ParagraphID]] = None) -> Union[str, List[str]]:
+        """
+        Enhance a paragraph based on the context of the surrounding paragraphs.
+        This method provide a better paragraph. This should be called with either a single paragraph (e.g. if a big one) or multiple ones.
+
+        Args:
+            paragraph_id (Optional[ParagraphID]): The paragraph id.
+            paragraph_ids (Optional[List[ParagraphID]]): A list of paragraph ids that are adjacent to the paragraph to enhance.
+
+        Returns:
+            Union[str, List[str]]: The enhanced paragraph text (if paragraph_id was provided) or a list of enhanced paragraph texts (if paragraph_ids were provided).
         """
         pass
 

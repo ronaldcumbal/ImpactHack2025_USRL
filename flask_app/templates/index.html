@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Form</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='styles.css')}}">
+</head>
+<body>
+    <div class="container">
+        <h2>Complete the following questions:</h2>
+
+        <!-- Question 1 -->
+        <label for="q1">1. First Question?</label>
+        <textarea id="q1" name="q1" rows="4"></textarea>
+        <button type="button" onclick="evaluateAnswer('q1')">Evaluate</button>
+        <div class="feedback" id="feedback-q1"></div>
+
+        <!-- Question 2 -->
+        <label for="q2">2. Second Question?</label>
+        <textarea id="q2" name="q2" rows="4"></textarea>
+        <button type="button" onclick="evaluateAnswer('q2')">Evaluate</button>
+        <div class="feedback" id="feedback-q2"></div>
+
+        <!-- Question 3 -->
+        <label for="q3">3. Third Question?</label>
+        <textarea id="q3" name="q3" rows="4"></textarea>
+        <button type="button" onclick="evaluateAnswer('q3')">Evaluate</button>
+        <div class="feedback" id="feedback-q3"></div>
+
+        <!-- Final submit button to save all answers -->
+        <button class="save-button" type="button" onclick="saveAllAnswers()">Save All Answers</button>
+        <p id="status"></p>
+    </div>
+
+    <!-- Chat Window -->
+    <div class="chat-container">
+        <h3>Chat with the agent here: </h3>
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="Type a message...">
+        <button onclick="sendChatMessage()">Send</button>
+    </div>
+
+    <script src="{{url_for('static', filename='script.js')}}"></script>
+</body>
+</html>

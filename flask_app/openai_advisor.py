@@ -6,6 +6,7 @@ from openai import OpenAI
 import json
 import difflib
 import re
+from context_variables import PARAGRAPH_CONTEXTS
 
 
 def clean_outputs(response_text: str):
@@ -71,21 +72,6 @@ class OpenAIBasicAdvisor(LLMAdvisor):
     """
     An basic implementation of LLMAdvisor that uses OpenAI's Chat API. This implementation is yet to be tested. 
     """
-
-    paragraph_contexts = {
-        "q1": {
-            "question": "What is your organisations’ mission and core value proposition?",
-            "context": "The text provided by the user should be short and concise, focusing on the mission and the values in bullet point-style."
-        },
-        "q2": {
-            "question": "What are the problems(s) your project is trying to address? Give a clear context and show why your project is relevant.",
-            "context": "The text provided by the user should be clear and demonstrate relevance. It should not be too long, and should adhere to a free text format."
-        },
-        "q3": {
-            "question": "What is the project goal? ",
-            "context": "The text provided by the user should have clear points it addresses, with separate paragraphs for each goal, numbering goals evidently. It should not elaborate too much"
-        }
-    }
 
     # The general and reusable prompt to give context to the model.
     context_prompt = "You are an LLM advisor that has to give feedback to grant proposal writing for proposal aimed a the non-profit World Childhood Foundation."
@@ -174,7 +160,10 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         Process and add a single paragraph.
         """
         assert self.initial_context, "You must provide an initial context before adding a paragraph."
-        system_prompt = self.context_prompt + (
+        system_prompt = self.context_prompt
+        system_prompt += "\nThe user is trying to answer the following question: " + PARAGRAPH_CONTEXTS[paragraph_id]["question"]
+        system_prompt += "\nThis is the context of the paragraph: " + PARAGRAPH_CONTEXTS[paragraph_id]["context"]
+        system_prompt += (
             "Analyze the following paragraph and provide constructive feedback."
             "Your goal is not to provide a full response but to instill reflection in the user."
             "Begin by analyzing the paragraph and understanding the underling message that the user want to convey."
@@ -184,7 +173,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
             "Return a JSON array of advice objects, where each object has keys 'extract' (a relevant excerpt) and "
             "'advice' (a suggestion for improvement). Output only valid JSON."
         )
-
+        system_prompt += "\n\nThis is the general outline of the project: " + self.initial_context
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": paragraph},
@@ -222,9 +211,10 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         for advice, extract in old_advice.items():
             advice_text += f"\nExtract: {extract}, Advice given: {advice}"
         advice_text += "\n"
-        system_prompt = self.context_prompt + (
-            "A paragraph has been updated."
-        )
+        system_prompt = self.context_prompt
+        system_prompt += "\nThe user is trying to answer the following question: " + PARAGRAPH_CONTEXTS[paragraph_id]["question"] 
+        system_prompt += "\nThis is the context of the paragraph: " + PARAGRAPH_CONTEXTS[paragraph_id]["context"]
+        system_prompt += "\nA paragraph has been updated."
         system_prompt += advice_text
         system_prompt += (
             "Below are the merged paragraph, highlighting the changes. Focus on the differences and provide constructive feedback "
@@ -232,6 +222,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
             "has been fixed and keeping advice that has not been addressed in the same wording, where each object has keys 'extract' and 'advice'. "
             "Output only valid JSON."
         )
+        system_prompt += "\n\nThis is the general outline of the project: " + self.initial_context
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": merged_paragraph},
@@ -352,18 +343,18 @@ if __name__ == "__main__":
     advisor = OpenAIBasicAdvisor()
     advisor.add_initial_context("In this project, we want to build a house for a family in need.")
     text = {
-        "1": "The house will have a living room, two bedrooms, and a kitchen.",
-        "2": "The family has two children and a dog.",
+        "q1": "The house will have a living room, two bedrooms, and a kitchen.",
+        "q2": "The family has two children and a dog.",
     }
-    advice_1 = advisor.add_paragraph("1", text["1"])
+    advice_1 = advisor.add_paragraph("q1", text["q1"])
     print("Advice for paragraph 1:\n", advice_1)
-    advice_2 = advisor.add_paragraph("2", text["2"])
+    advice_2 = advisor.add_paragraph("q2", text["q2"])
     print("Advice for paragraph 2:\n", advice_2)
     updated_text = {
-        "1": "The house will have a living room, two bedrooms, a kitchen, and a backyard.",
-        "2": "The family has two children and a cat.",
+        "q1": "The house will have a living room, two bedrooms, a kitchen, and a backyard.",
+        "q2": "The family has two children and a cat.",
     }
-    updated_advice_1 = advisor.update_paragraph("1", updated_text["1"])
+    updated_advice_1 = advisor.update_paragraph("q1", updated_text["q1"])
     print("Updated advice for paragraph 1:\n", updated_advice_1)
-    updated_advice_2 = advisor.update_paragraph("2", updated_text["2"])
+    updated_advice_2 = advisor.update_paragraph("q2", updated_text["q2"])
     print("Updated advice for paragraph 2:\n", updated_advice_2)

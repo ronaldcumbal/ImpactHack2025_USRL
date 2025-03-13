@@ -52,9 +52,13 @@ function evaluateAnswer(questionId) {
     let context = document.getElementById("context").value; // Get context input
     let feedbackContainer = document.getElementById("feedback-" + questionId);
     let overlayElement = document.getElementById("highlighted-content-" + questionId);
-
+    let loadingGif = document.getElementById("loading-" + questionId);
+    
     // Clear previous feedback
     feedbackContainer.innerHTML = "";
+
+    // Show loading gif while waiting for the response
+    loadingGif.style.display = "inline-block";
 
     fetch("http://127.0.0.1:5000/generate_feedback", {
         method: "POST",
@@ -119,6 +123,8 @@ function evaluateAnswer(questionId) {
             };
             feedbackContainer.appendChild(feedbackElement);
         });
+        // Hide loading gif once feedback is received
+        loadingGif.style.display = "none";
     })
     .catch(error => console.error("Error:", error));
     fetch('http://127.0.0.1:5000/get_paragraph_score', {
@@ -142,8 +148,10 @@ function evaluateAnswer(questionId) {
         // Update the background color based on the score
         progressBar.style.backgroundColor = getColor(score);
     })
-    .catch(error => console.error('Error fetching score:', error));
-
+    .catch(error => {
+        console.error("Error:", error);
+        loadingGif.style.display = "none"; // Hide loading gif in case of error
+    });
 }
 
 function saveAllAnswers() {

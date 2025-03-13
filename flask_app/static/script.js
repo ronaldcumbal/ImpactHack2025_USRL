@@ -199,6 +199,10 @@ function fetchAnswers() {
 function sendChatMessage() {
     let message = document.getElementById("chat-input").value;
     if (!message.trim()) return;
+    let loadingGif = document.getElementById("chat-loading");
+
+    // Show loading gif while waiting for the response
+    loadingGif.style.display = "inline-block";
     
     fetch("http://127.0.0.1:5000/chat", {
         method: "POST",
@@ -232,8 +236,15 @@ function sendChatMessage() {
         });
 
         document.getElementById("chat-input").value = "";
+
+        // Hide the loading gif once the response is received
+        loadingGif.style.display = "none";
     })
-    .catch(error => console.error("Error:", error));
+    .catch(error => {
+        console.error("Error:", error);
+        // Hide the loading gif in case of error
+        loadingGif.style.display = "none";
+    });
 }
 
 document.addEventListener("DOMContentLoaded", function () {

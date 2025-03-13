@@ -1,6 +1,7 @@
+from collections import OrderedDict, defaultdict
 from os import environ
 from llm_interface import LLMAdvisor, ChatHistory, ChatMessage, WholeTextAdvice, ParagraphAdvice, ReplyResponse, ParagraphID, ParagraphText
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Union, Optional, Tuple
 from openai import OpenAI
 import json
 import difflib
@@ -71,6 +72,21 @@ class OpenAIBasicAdvisor(LLMAdvisor):
     An basic implementation of LLMAdvisor that uses OpenAI's Chat API. This implementation is yet to be tested. 
     """
 
+    paragraph_contexts = {
+        "q1": {
+            "question": "What is your organisations’ mission and core value proposition?",
+            "context": "The text provided by the user should be short and concise, focusing on the mission and the values in bullet point-style."
+        },
+        "q2": {
+            "question": "What are the problems(s) your project is trying to address? Give a clear context and show why your project is relevant.",
+            "context": "The text provided by the user should be clear and demonstrate relevance. It should not be too long, and should adhere to a free text format."
+        },
+        "q3": {
+            "question": "What is the project goal? ",
+            "context": "The text provided by the user should have clear points it addresses, with separate paragraphs for each goal, numbering goals evidently. It should not elaborate too much"
+        }
+    }
+
     # The general and reusable prompt to give context to the model.
     context_prompt = "You are an LLM advisor that has to give feedback to grant proposal writing for proposal aimed a the non-profit World Childhood Foundation."
 
@@ -79,8 +95,13 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         api_key = api_key or environ.get("OPENAI_API_KEY")
         self.client = OpenAI(api_key=api_key)
         self.temperature = temperature
-        self.chat_history: ChatHistory = []
+
+        # keep feedback history for each paragraph id, for each extract
+        self.chat_history: Dict[ParagraphID, Dict[str, ChatHistory]] = defaultdict(dict)
         self.paragraphs: Dict[ParagraphID, ParagraphText] = {}
+        # FIXME: does interacting with the feedback (see chat_history) change the advice?
+        self.advices: Dict[ParagraphID, Dict[str, str]] = defaultdict(dict)  # stores dictionary of paragraph id and a dict with {advice => text segment}
+        # FIXME: needs to add initial context to various functions and adjust the prompt
         self.initial_context = None
 
     def _openai_call(self, messages: List[ChatMessage]) -> str:
@@ -100,12 +121,13 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         self.initial_context = context
 
     def process_whole_text(self, text: Dict[ParagraphID, ParagraphText]) -> WholeTextAdvice:
+        raise NotImplementedError("This method is not implemented in this class.")
         """
         Process the entire text and return advice for each paragraph.
         """
         # sort text by the key
+        text = OrderedDict(sorted(text.items(), key=lambda x: x[0]))
         if not self.initial_context:
-            raise NotImplementedError("You must provide an initial context before processing the whole text.")
             # extract initial context by summarizing the text
             messages = [
                 {
@@ -114,7 +136,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
                 },
                 {
                     "role": "user",
-                    "content": " ".join(text.values()),
+                    "content": "\n".join(text.values()),
                 }
             ]
             response_text = self._openai_call(messages)
@@ -153,7 +175,12 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         """
         assert self.initial_context, "You must provide an initial context before adding a paragraph."
         system_prompt = self.context_prompt + (
-            "Analyze the following paragraph and provide constructive feedback. "
+            "Analyze the following paragraph and provide constructive feedback."
+            "Your goal is not to provide a full response but to instill reflection in the user."
+            "Begin by analyzing the paragraph and understanding the underling message that the user want to convey."
+            "Then reason about what a reader would not understand or what could be improved. Finally pry the user with some questions."
+            "For each question, quote the part of the paragraph that led you to ask it and begin by summarizing the text"
+            "e.g. 'Here you talk about how you would do this, but it is not clear what the final objective would be. Could you clarify that?'"
             "Return a JSON array of advice objects, where each object has keys 'extract' (a relevant excerpt) and "
             "'advice' (a suggestion for improvement). Output only valid JSON."
         )
@@ -169,9 +196,15 @@ class OpenAIBasicAdvisor(LLMAdvisor):
             advice = json.loads(response_text)
         except json.JSONDecodeError:
             raise ValueError("Failed to decode JSON response from OpenAI for add_paragraph.")
+        # we expect advice to be a list of dict with keys extract and advice
+        # if it's a dict with len 1, pop the value
+        if isinstance(advice, dict):
+            advice = advice.popitem()[1]
 
         # Store the paragraph.
         self.paragraphs[paragraph_id] = paragraph
+        for adv in advice:
+            self.advices[paragraph_id][adv["advice"]] = adv["extract"]
         return advice
 
     def update_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> ParagraphAdvice:
@@ -179,19 +212,29 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         Update an existing paragraph and return advice that focuses on the differences.
         """
         if paragraph_id not in self.paragraphs:
-            raise ValueError(f"Paragraph ID {paragraph_id} does not exist.")
+            # New paragraph added
+            return self.add_paragraph(paragraph_id, paragraph)
 
         old_paragraph = self.paragraphs[paragraph_id]
+        merged_paragraph = markdown_diff(old_paragraph, paragraph)
+        old_advice = self.advices[paragraph_id]  # dict of advice => extract
+        advice_text = "Here's the list of advices given to the previous version of the paragraph:"
+        for advice, extract in old_advice.items():
+            advice_text += f"\nExtract: {extract}, Advice given: {advice}"
+        advice_text += "\n"
         system_prompt = self.context_prompt + (
-            "A paragraph has been updated. "
-            "Below are the old and new versions of the paragraph. Focus on the differences and provide constructive feedback "
-            "on the changes. Return a JSON array of advice objects, where each object has keys 'extract' and 'advice'. "
+            "A paragraph has been updated."
+        )
+        system_prompt += advice_text
+        system_prompt += (
+            "Below are the merged paragraph, highlighting the changes. Focus on the differences and provide constructive feedback "
+            "on the changes. Return a JSON array of advice objects, based on the previous advice given, removing advice that "
+            "has been fixed and keeping advice that has not been addressed in the same wording, where each object has keys 'extract' and 'advice'. "
             "Output only valid JSON."
         )
-        user_content = f"Old Paragraph:\n{old_paragraph}\n\nNew Paragraph:\n{paragraph}"
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
+            {"role": "user", "content": merged_paragraph},
         ]
 
         response_text = self._openai_call(messages)
@@ -203,9 +246,10 @@ class OpenAIBasicAdvisor(LLMAdvisor):
 
         # Update the stored paragraph.
         self.paragraphs[paragraph_id] = paragraph
+        # FIXME: update chat_history by poping the old paragraph and adding the new one
         return advice
 
-    def paragraph_reply(self, paragraph_id: ParagraphID, paragraph_extract: ParagraphText, reply: str) -> ReplyResponse:
+    def paragraph_reply(self, paragraph_id: ParagraphID, paragraph_advice: str, reply: str) -> ReplyResponse:
         """
         Process the user's reply to a paragraph's feedback and return a chat history with the new response.
         If the user requested a change, also return an updated version of the paragraph.
@@ -213,42 +257,52 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         if paragraph_id not in self.paragraphs:
             raise ValueError(f"Paragraph ID {paragraph_id} does not exist.")
 
-        # Add the user's reply to the conversation.
-        user_message = {
-            "role": "user",
-            "content": f"Regarding the following extract: '{paragraph_extract}'\nMy reply: {reply}",
-        }
-        self.chat_history.append(user_message)
+        # get the given feedback for the paragraph
+        extract = self.advices[paragraph_id][paragraph_advice]
+        paragraph = self.paragraphs[paragraph_id]
+        if paragraph_id in self.chat_history and paragraph_advice in self.chat_history[paragraph_id]:
+            base_history = self.chat_history[paragraph_id][paragraph_advice]
+        else:
+            base_history = [
+                {"role": "system", "content": self.context_prompt},
+                {"role": "user", "content": paragraph},
+                {"role": "assistant", "content": "Considering the following extract of your paragraph: " + extract + "\n" + paragraph_advice},
+            ]
+        base_history.append({"role": "user", "content": reply})
 
-        system_prompt = (
-            "You are an expert writing assistant engaged in an interactive conversation. Based on the user's reply and "
-            "the context provided about a specific extract of a paragraph, provide a helpful response. "
-            "If the user requests an update to the paragraph, include an updated version. "
-            "Return your response in JSON format with two keys: 'assistant_reply' (your message to the user) "
-            "and 'updated_paragraph' (the updated paragraph text if applicable, otherwise null). "
-            "Output only valid JSON."
-        )
+        # system_prompt = (
+        #     "You are an expert writing assistant engaged in an interactive conversation. Based on the user's reply and "
+        #     "the context provided about a specific extract of a paragraph, provide a helpful response. "
+        #     "If the user requests an update to the paragraph, include an updated version. "
+        #     "Return your response in JSON format with two keys: 'assistant_reply' (your message to the user) "
+        #     "and 'updated_paragraph' (the updated paragraph text if applicable, otherwise null). "
+        #     "Output only valid JSON."
+        # )
 
-        messages = [{"role": "system", "content": system_prompt}] + self.chat_history
-        response_text = self._openai_call(messages)
-        response_text = clean_outputs(response_text)
-        try:
-            response_json = json.loads(response_text)
-        except json.JSONDecodeError:
-            raise ValueError("Failed to decode JSON response from OpenAI for paragraph_reply.")
+        # messages = [{"role": "system", "content": system_prompt}] + self.chat_history
+        response_text = self._openai_call(base_history)
 
-        assistant_reply = response_json.get("assistant_reply", "")
-        updated_paragraph = response_json.get("updated_paragraph")  # could be None
+        # FIXME: currently we do not support updating the paragraph
+        # response_text = clean_outputs(response_text)
+        # try:
+        #     response_json = json.loads(response_text)
+        # except json.JSONDecodeError:
+        #     raise ValueError("Failed to decode JSON response from OpenAI for paragraph_reply.")
+
+        # assistant_reply = response_json.get("assistant_reply", "")
+        # updated_paragraph = response_json.get("updated_paragraph")  # could be None
 
         # Append the assistant's reply to the chat history.
-        assistant_message = {"role": "assistant", "content": assistant_reply}
-        self.chat_history.append(assistant_message)
+        assistant_message = {"role": "assistant", "content": response_text}
+        base_history.append(assistant_message)
+        self.chat_history[paragraph_id][paragraph_advice] = base_history
 
-        # Update the paragraph if a new version was provided.
-        if updated_paragraph is not None:
-            self.paragraphs[paragraph_id] = updated_paragraph
+        return base_history
+        # # Update the paragraph if a new version was provided.
+        # if updated_paragraph is not None:
+        #     self.paragraphs[paragraph_id] = updated_paragraph
 
-        return (self.chat_history, updated_paragraph)
+        # return (self.chat_history, updated_paragraph)
 
     def enhance_paragraph(
         self, paragraph_id: Optional[ParagraphID] = None, paragraph_ids: Optional[List[ParagraphID]] = None
@@ -291,3 +345,25 @@ class OpenAIBasicAdvisor(LLMAdvisor):
 
         else:
             raise ValueError("Either 'paragraph_id' or 'paragraph_ids' must be provided.")
+
+
+if __name__ == "__main__":
+    # tests
+    advisor = OpenAIBasicAdvisor()
+    advisor.add_initial_context("In this project, we want to build a house for a family in need.")
+    text = {
+        "1": "The house will have a living room, two bedrooms, and a kitchen.",
+        "2": "The family has two children and a dog.",
+    }
+    advice_1 = advisor.add_paragraph("1", text["1"])
+    print("Advice for paragraph 1:\n", advice_1)
+    advice_2 = advisor.add_paragraph("2", text["2"])
+    print("Advice for paragraph 2:\n", advice_2)
+    updated_text = {
+        "1": "The house will have a living room, two bedrooms, a kitchen, and a backyard.",
+        "2": "The family has two children and a cat.",
+    }
+    updated_advice_1 = advisor.update_paragraph("1", updated_text["1"])
+    print("Updated advice for paragraph 1:\n", updated_advice_1)
+    updated_advice_2 = advisor.update_paragraph("2", updated_text["2"])
+    print("Updated advice for paragraph 2:\n", updated_advice_2)

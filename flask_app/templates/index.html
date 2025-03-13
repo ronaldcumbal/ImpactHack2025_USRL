@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="{{url_for('static', filename='styles.css')}}">
 </head>
 <body>
-    <div class="container">
+    <div class="main-container">
+        <div class="form-container">
+    <!-- <div class="container"> -->
         <h2>Complete the following questions:</h2>
         <label for="context">Write short description of your project:</label>        
         <textarea id="context" name="context" rows="3" placeholder="Enter background information here..."></textarea>
@@ -32,7 +34,7 @@
         <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 2 Image">
         <div class="text_container"  id="container-q2">
             <div class="highlighter" id="highlighted-content-q2"></div>
-            <textarea id="q2" name="q2" rows="4">There are supposedly more than 120,000 kids in Thailand living in different ...</textarea>
+            <textarea id="q2" name="q2" rows="4"></textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q2')">Evaluate</button>
         <button type="button" onclick="okayParagraph('q2')">I am okay with this paragraph</button>
@@ -114,15 +116,15 @@
         <button class="save-button" type="button" onclick="saveAllAnswers()">Save All Answers</button>
     </div>
 
-    <!-- Chat Window -->
-    <div class="chat-container">
-        <h3>Chat with the agent here: </h3>
-        <div id="chat-box"></div>
-        <textarea id="chat-input" placeholder="Type a message..."></textarea>
-        <button onclick="sendChatMessage()">Send</button>
-        <img id="chat-loading" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
+        <!-- Chat Window -->
+        <div class="chat-container">
+            <h3>Chat with the agent here: </h3>
+            <div id="chat-box"></div>
+            <textarea id="chat-input" placeholder="Type a message..."></textarea>
+            <button onclick="sendChatMessage()">Send</button>
+            <img id="chat-loading" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
+        </div>
     </div>
-
     <script src="{{url_for('static', filename='script.js')}}"></script>
 </body>
 </html>

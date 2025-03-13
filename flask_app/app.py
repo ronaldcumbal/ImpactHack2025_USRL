@@ -64,6 +64,14 @@ def generate_feedback():
 
     return jsonify({question_id: feedback_list, question_id+"_extracts": highlight_list}), 200
 
+@app.route('/get_paragraph_score', methods=['POST'])
+def get_paragraph_score():
+    data = request.json
+    question_id = data.get("question_id")
+    text = data.get("answer", "")
+    score = agent.score_paragraph(paragraph_id=question_id, paragraph=text)
+    return jsonify({"score": score}), 200
+
 @app.route('/set_chat_id', methods=['POST'])
 def set_chat_id():
     global chat_id

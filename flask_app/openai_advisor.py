@@ -156,6 +156,33 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         self.paragraphs.update(text)
         return whole_advice
 
+    def score_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> float:
+        # get a score on the "goodness/completeness" of the paragraph on a scale of 0 to 1
+        system_prompt = self.context_prompt
+        system_prompt += (
+            "Analyze the following paragraph and provide a score on a scale of 0 to 1, where 0 is the worst and 1 is the best. "
+            "Your score should reflect how well the paragraph answers the question and how well it is written."
+        )
+        system_prompt += "The question the user is trying to answer is: " + PARAGRAPH_CONTEXTS[paragraph_id]['question']
+        system_prompt += "This is the context of the paragraph: " + PARAGRAPH_CONTEXTS[paragraph_id]['context'] 
+        system_prompt += "Return only the score as a float."
+        system_prompt += "\n\nThis is the general outline of the project: " + self.initial_context
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": paragraph},
+        ]
+        response_text = self._openai_call(messages)
+        retries = 3
+        while retries > 0:
+            try:
+                score = float(response_text)
+                break
+            except ValueError:
+                retries -= 1
+                response_text = self._openai_call(messages)
+        return score
+
     def add_paragraph(self, paragraph_id: ParagraphID, paragraph: ParagraphText) -> ParagraphAdvice:
         """
         Process and add a single paragraph.
@@ -182,9 +209,16 @@ class OpenAIBasicAdvisor(LLMAdvisor):
 
         response_text = self._openai_call(messages)
         response_text = clean_outputs(response_text)
-        try:
-            advice = json.loads(response_text)
-        except json.JSONDecodeError:
+        retries = 3
+        while retries > 0:
+            try:
+                advice = json.loads(response_text)
+                break
+            except json.JSONDecodeError:
+                retries -= 1
+                response_text = self._openai_call(messages)
+                response_text = clean_outputs(response_text)
+        else:
             raise ValueError("Failed to decode JSON response from OpenAI for add_paragraph.")
         # we expect advice to be a list of dict with keys extract and advice
         # if it's a dict with len 1, pop the value
@@ -231,9 +265,16 @@ class OpenAIBasicAdvisor(LLMAdvisor):
 
         response_text = self._openai_call(messages)
         response_text = clean_outputs(response_text)
-        try:
-            advice = json.loads(response_text)
-        except json.JSONDecodeError:
+        retries = 3
+        while retries > 0:
+            try:
+                advice = json.loads(response_text)
+                break
+            except json.JSONDecodeError:
+                retries -= 1
+                response_text = self._openai_call(messages)
+                response_text = clean_outputs(response_text)
+        else:
             raise ValueError("Failed to decode JSON response from OpenAI for update_paragraph.")
 
         # Update the stored paragraph.

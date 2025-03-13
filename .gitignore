@@ -1,7 +1,7 @@
 # virtual environments
 venv/
 env*
-
+.env
 .venv/
 
 # Flask #

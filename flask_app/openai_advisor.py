@@ -77,7 +77,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
     # The general and reusable prompt to give context to the model.
     context_prompt = "You are an LLM advisor that has to give feedback to grant proposal writing for proposal aimed a the non-profit World Childhood Foundation."
 
-    def __init__(self, model: str = "gpt-4o-mini-2024-07-18", temperature: float = 0.7, api_key: str = None):
+    def __init__(self, model: str = "gpt-4o-mini-2024-07-18", temperature: float = 0, api_key: str = None):
         self.model = model
         api_key = api_key or environ.get("OPENAI_API_KEY")
         self.client = OpenAI(api_key=api_key)
@@ -98,6 +98,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
+            temperature=self.temperature,
         )
         return response.choices[0].message.content.strip()
 
@@ -162,6 +163,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         system_prompt += (
             "Analyze the following paragraph and provide a score on a scale of 0 to 1, where 0 is the worst and 1 is the best. "
             "Your score should reflect how well the paragraph answers the question and how well it is written."
+            "Be critical and provide a score that reflects the quality of the paragraph. Don't hold back."
         )
         system_prompt += "The question the user is trying to answer is: " + PARAGRAPH_CONTEXTS[paragraph_id]['question']
         system_prompt += "This is the context of the paragraph: " + PARAGRAPH_CONTEXTS[paragraph_id]['context'] 
@@ -297,7 +299,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
             base_history = self.chat_history[paragraph_id][paragraph_advice]
         else:
             base_history = [
-                {"role": "system", "content": self.context_prompt},
+                {"role": "system", "content": self.context_prompt + " Be concise with your answers e.g. a few sentences and DON'T USE BULLET POINTS."},
                 {"role": "user", "content": paragraph},
                 {"role": "assistant", "content": "Considering the following extract of your paragraph: " + extract + "\n" + paragraph_advice},
             ]

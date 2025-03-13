@@ -22,6 +22,11 @@ body {
     width: 100%;
 }
 
+.question-image {
+    width: 60%;
+    display: block;
+}
+
 h2 {
     color: #333;
     font-size: 36px;
@@ -200,8 +205,8 @@ textarea {
 }
 
 .loading-gif {
-    width: 20px;
-    height: 20px;
-    margin-left: 10px;
-    display: inline-block;
+    width: 112px;
+    height: 84px;
+    display: block;
+    margin: 0 auto;
 }

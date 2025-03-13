@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchAnswers(); // Load saved answers on page load
 });
 
-const colors = ["#adcdcd80","#d0e0e380","#eeadad80","#fff2cc80","#e4dbd280"];
+const colors = ["#F6BD60","#EDDEA4","#F5CAC3","#84A59D","#F28482", "#D8D4F2"];
 
 function getColor(score) {
     if (score <= 0.5) {
@@ -85,7 +85,6 @@ function evaluateAnswer(questionId) {
         let feedbackList = data[questionId] || ["Error processing feedback."];
         let highlightList = data[questionId+"_extracts"] || ["Error processing highlights."];
         
-        // TESTING - Update the text overlay with highlighted feedback segments.
         updateOverlayHighlighting(answer, highlightList, overlayElement);
 
         feedbackList.forEach((feedbackText, index) => {
@@ -209,9 +208,27 @@ function sendChatMessage() {
     if (!message.trim()) return;
     let loadingGif = document.getElementById("chat-loading");
 
+    let chatBox = document.getElementById("chat-box");
     // Show loading gif while waiting for the response
     loadingGif.style.display = "inline-block";
     
+    // clean input instantly
+    document.getElementById("chat-input").value = "";
+    // add message to chatBox
+    let messageDiv = document.createElement("div");
+
+    // Create bold role element
+    let roleElement = document.createElement("strong");
+    roleElement.innerText = "You: ";
+    messageDiv.appendChild(roleElement);
+
+    // Add the message content
+    let contentText = document.createTextNode(message);
+    messageDiv.appendChild(contentText);
+
+    // Append the message div to chat-box
+    chatBox.appendChild(messageDiv);
+
     fetch("http://127.0.0.1:5000/chat", {
         method: "POST",
         headers: {
@@ -222,7 +239,6 @@ function sendChatMessage() {
     .then(response => response.json())
     .then(data => {
         // data is expected to be a list of objects with keys "role" and "content"
-        let chatBox = document.getElementById("chat-box");
             
         // Optionally, clear previous messages in chat-box
         chatBox.innerHTML = "";
@@ -243,7 +259,6 @@ function sendChatMessage() {
             chatBox.appendChild(messageDiv);
         });
 
-        document.getElementById("chat-input").value = "";
 
         // Hide the loading gif once the response is received
         loadingGif.style.display = "none";

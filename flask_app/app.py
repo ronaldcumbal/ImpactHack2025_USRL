@@ -1,6 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
+from openai_advisor import OpenAIBasicAdvisor
+
+agent = OpenAIBasicAdvisor()
+
 app = Flask(__name__)
 CORS(app)  # Allow frontend requests
 
@@ -29,17 +33,35 @@ def generate_feedback():
     data = request.json
     question_id = data.get("question_id")
     text = data.get("answer", "")
+    context = data.get("context", "")  # Get context from request
+
+    # Add context to the agent
+    agent.add_initial_context(context=context)
 
     if not question_id or text.strip() == "":
-        return jsonify({"feedback": "Please provide an answer before getting feedback."}), 200
+        return jsonify({"feedback": "Please provide a longer answer before getting feedback."}), 200
 
-    # Simple rule-based feedback
+    # Generate multiple feedback suggestions
+    feedback_list = []
+    highlight_list = []
+
     if len(text.split()) < 10:
-        feedback = "Try to elaborate more on your response."
+        feedback_list.append("Try to elaborate more on your response.")
     else:
-        feedback = "Great response! You provided a well-thought-out answer."
+        feedback = agent.add_paragraph(paragraph_id=question_id, paragraph=text)
+        for para in feedback:
+            feedback_list.append(para['advice'])
 
-    return jsonify({question_id: feedback}), 200
+            highlight_list.append(para['extract'])
+
+    # if "technology" in text.lower():
+    #     feedback_list.append("Consider discussing the impact of technology on society.")
+    
+    # if "ai" in text.lower():
+    #     feedback_list.append("You could mention some AI ethical concerns.")
+
+    return jsonify({question_id: feedback_list}), 200
+
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -52,6 +74,14 @@ def chat():
 
     response = "That's interesting! Could you elaborate?"
     targets = ["chat"]  # Default to chat
+
+
+
+# paragraph_reply
+
+# reply to feedback
+# paragraph_reply(self, paragraph_id: ParagraphID, paragraph_extract: ParagraphText, reply: str) -
+
 
     # Determine where to send the response
     if "hello" in message or "hi" in message:

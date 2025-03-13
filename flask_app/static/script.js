@@ -4,17 +4,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function evaluateAnswer(questionId) {
     let answer = document.getElementById(questionId).value;
+    let context = document.getElementById("context").value; // Get context input
+    let feedbackContainer = document.getElementById("feedback-" + questionId);
+
+    // Clear previous feedback
+    feedbackContainer.innerHTML = "";
 
     fetch("http://127.0.0.1:5000/generate_feedback", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ question_id: questionId, answer: answer })
+        body: JSON.stringify({ 
+            question_id: questionId, 
+            answer: answer, 
+            context: context // Send context to the backend
+        })
     })
     .then(response => response.json())
     .then(data => {
-        document.getElementById("feedback-" + questionId).innerText = data[questionId] || "Error processing feedback.";
+        let feedbackList = data[questionId] || ["Error processing feedback."];
+
+        feedbackList.forEach(feedbackText => {
+            let feedbackElement = document.createElement("div");
+            feedbackElement.classList.add("feedback-item");
+            feedbackElement.innerText = feedbackText;
+            feedbackElement.onclick = function () {
+                document.getElementById("chat-input").value = feedbackText;
+            };
+            feedbackContainer.appendChild(feedbackElement);
+        });
     })
     .catch(error => console.error("Error:", error));
 }
@@ -63,19 +82,23 @@ function sendChatMessage() {
     .then(response => response.json())
     .then(data => {
         let responseText = data.response;
-        let targets = data.target; // This can be an array of targets
+        let targets = data.target;
 
-        // Ensure targets is always an array
         if (!Array.isArray(targets)) {
             targets = [targets];
         }
 
-        // Display response in multiple locations
         targets.forEach(target => {
             if (target.startsWith("feedback")) {
-                let feedbackElement = document.getElementById(target);
-                if (feedbackElement) {
+                let feedbackContainer = document.getElementById(target);
+                if (feedbackContainer) {
+                    let feedbackElement = document.createElement("div");
+                    feedbackElement.classList.add("feedback-item");
                     feedbackElement.innerText = responseText;
+                    feedbackElement.onclick = function () {
+                        document.getElementById("chat-input").value = responseText;
+                    };
+                    feedbackContainer.appendChild(feedbackElement);
                 }
             } else if (target === "chat") {
                 let chatBox = document.getElementById("chat-box");
@@ -85,7 +108,7 @@ function sendChatMessage() {
             }
         });
 
-        document.getElementById("chat-input").value = ""; // Clear input field
+        document.getElementById("chat-input").value = "";
     })
     .catch(error => console.error("Error:", error));
 }

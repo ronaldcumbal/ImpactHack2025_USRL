@@ -100,3 +100,22 @@ textarea {
     color: #2e7d32;
     font-style: italic;
 }
+
+
+.feedback-container {
+    margin-top: 10px;
+    padding: 5px;
+}
+
+.feedback-item {
+    background-color: #90df94;
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.feedback-item:hover {
+    background-color: #ddd;
+}

@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchAnswers(); // Load saved answers on page load
 });
 
-const colors = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b"];
+const colors = ["#adcdcd80","#d0e0e380","#eeadad80","#fff2cc80","#e4dbd280"];
 
 function getColor(score) {
     if (score <= 0.5) {
@@ -40,12 +40,21 @@ function updateOverlayHighlighting(text, feedbackList, overlayElement) {
         // Create a global, case-insensitive regex for the feedback segment.
         const regex = new RegExp(feedback, "gi");
         // Replace all occurrences with a span that has a background color.
-        escapedText = escapedText.replace(regex, match => `<span style="background-color: ${color};">${match}</span>`);
+        escapedText = escapedText.replace(regex, match => `<span style="background-color: ${color}; alpha:0.7;">${match}</span>`);
     });
 
     overlayElement.innerHTML = escapedText;
 }
   
+
+// Will fix the progress bar to 1
+function okayParagraph(questionId) {
+    let progressBar = document.getElementById('progressBar-' + questionId);
+    progressBar.style.width = '100%';
+    progressBar.style.backgroundColor = getColor(1);
+    let feedbackContainer = document.getElementById("feedback-" + questionId);
+    feedbackContainer.innerHTML = "";
+}
 
 function evaluateAnswer(questionId) {
     let answer = document.getElementById(questionId).value;
@@ -143,10 +152,13 @@ function evaluateAnswer(questionId) {
         // Expecting data like: { "score": 0.75 }
         const score = data.score;
         const progressBar = document.getElementById('progressBar-' + questionId);
-        // Update the width based on the score (0-1 -> 0-100%)
-        progressBar.style.width = (score * 100) + '%';
-        // Update the background color based on the score
-        progressBar.style.backgroundColor = getColor(score);
+        // only update the progress bar if the score is higher than the current score
+        // if (score > parseFloat(progressBar.style.width) / 100) {
+            // Update the width based on the score (0-1 -> 0-100%)
+            progressBar.style.width = (score * 100) + '%';
+            // Update the background color based on the score
+            progressBar.style.backgroundColor = getColor(score);
+        // }
     })
     .catch(error => {
         console.error("Error:", error);
@@ -231,12 +243,15 @@ document.addEventListener("DOMContentLoaded", function () {
             // Reset the height so it shrinks if needed
             this.style.height = "auto";
             // Set the height to match the scroll height
-            this.style.height = this.scrollHeight + "px";
+            const newHeight = this.scrollHeight + "px";
+            this.style.height = newHeight;
+
 
             // Get the corresponding highlighter overlay by ID
             const overlayId = "highlighted-content-" + this.id;
             const overlayElement = document.getElementById(overlayId);
             if (overlayElement) {
+                overlayElement.style.height = newHeight;
                 // Update the overlay's content.
                 // Use escapeHtml to avoid injecting raw HTML (if needed).
                 overlayElement.innerHTML = escapeHtml(this.value);

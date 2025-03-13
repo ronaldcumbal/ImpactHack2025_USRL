@@ -69,6 +69,8 @@ def get_paragraph_score():
     data = request.json
     question_id = data.get("question_id")
     text = data.get("answer", "")
+    context = data.get("context", "")  # Get context from request
+    agent.add_initial_context(context=context)
     score = agent.score_paragraph(paragraph_id=question_id, paragraph=text)
     return jsonify({"score": score}), 200
 

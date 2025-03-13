@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 
-from create_word_document import create_docx_with_comments
+from create_word_document import create_docx_with_comments, create_docx_with_comments_with_headings
 from openai_advisor import OpenAIBasicAdvisor
 
 agent = OpenAIBasicAdvisor()
@@ -122,7 +122,8 @@ def chat():
 @app.route('/generate_docx', methods=['POST', "GET"])
 def generate_docx():
     results, text, comment_map = agent.get_whole_text()
-    create_docx_with_comments(text, comment_map, "./flask_app/output.docx")
+    # create_docx_with_comments(text, comment_map, "./flask_app/output.docx")
+    create_docx_with_comments_with_headings(results, comment_map, "./flask_app/output.docx")
     return send_file("output.docx", as_attachment=True, download_name="generated_document.docx")
 
 

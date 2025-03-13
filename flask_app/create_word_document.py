@@ -177,3 +177,63 @@ def create_docx_with_comments(text, comment_map, output_path):
     # Add the comments part to the DOCX.
     add_comments_to_docx(output_docx, comments_info)
     print("Comments have been added to the document.")
+
+
+def create_docx_with_comments_with_headings(text_dict, comment_map, output_path):
+    """
+    Creates a DOCX document where the text is provided as a dictionary {heading: paragraph}
+    and inserts comments (using comment_map) into the paragraph text.
+    
+    :param text_dict: Dictionary where each key is a heading and its value is the paragraph text.
+    :param comment_map: Dictionary mapping text segments (str) to comment feedback (str).
+    :param output_path: Path where the DOCX file will be saved.
+    """
+    doc = Document()
+    comments_info = []  # List to store (comment_id, feedback) for later use.
+    comment_id = 0
+
+    # Process each heading/paragraph pair.
+    for heading, paragraph_text in text_dict.items():
+        # Add the heading with a desired level (adjust level as needed).
+        doc.add_heading(heading, level=1)
+        
+        # Add a new paragraph.
+        p = doc.add_paragraph()
+        
+        # Find all comment segments within this paragraph.
+        segments = []
+        for segment, feedback in comment_map.items():
+            start = paragraph_text.find(segment)
+            if start != -1:
+                segments.append((start, start + len(segment), segment, feedback))
+            else:
+                print(f"Warning: segment '{segment}' not found in paragraph for heading '{heading}'.")
+        
+        # Sort segments by their starting index.
+        segments.sort(key=lambda x: x[0])
+        
+        # Process the paragraph text, inserting comment markers.
+        current = 0
+        for start, end, segment, feedback in segments:
+            # Add run for text before the commented segment.
+            if current < start:
+                p.add_run(paragraph_text[current:start])
+            # Add run for the commented segment.
+            run = p.add_run(paragraph_text[start:end])
+            # Insert a comment marker into this run.
+            add_comment_to_run(run, comment_id)
+            comments_info.append((comment_id, feedback))
+            comment_id += 1
+            current = end
+        
+        # Add any remaining text after the last segment.
+        if current < len(paragraph_text):
+            p.add_run(paragraph_text[current:])
+
+    # Save the document.
+    doc.save(output_path)
+    print(f"Document saved as {output_path}")
+
+    # Add the comments part to the DOCX.
+    add_comments_to_docx(output_path, comments_info)
+    print("Comments have been added to the document.")

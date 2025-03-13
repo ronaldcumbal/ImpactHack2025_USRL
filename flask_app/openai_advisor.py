@@ -3,6 +3,67 @@ from llm_interface import LLMAdvisor, ChatHistory, ChatMessage, WholeTextAdvice,
 from typing import Dict, List, Union, Optional
 from openai import OpenAI
 import json
+import difflib
+import re
+
+
+def clean_outputs(response_text: str):
+    """
+    Cleans the passed response_text, converting it to valid JSON.
+
+    Args:
+        response_text (str): The response text to clean.
+    """
+    # Remove any leading or trailing whitespace
+    response_text = response_text.strip()
+    # Remove leading json in response
+    response_cleaned = re.sub(r'json(\n)*', '', response_text)
+    response_cleaned = re.sub("```", "", response_cleaned)
+    return response_cleaned
+
+
+# helper function for update paragraph
+def markdown_diff(original, updated):
+    """
+    Given an original paragraph and an updated paragraph, returns a new paragraph
+    that shows the differences using markdown formatting.
+
+    Deleted content (present in original but removed in updated) will be wrapped with ~~strikethrough~~.
+    Added content (new in updated) will be wrapped with **bold**.
+
+    Args:
+        original (str): The original paragraph.
+        updated (str): The updated paragraph.
+
+    Returns:
+        str: The combined paragraph with markdown-formatted differences.
+    """
+    # Split paragraphs into words for a word-level diff.
+    old_words = original.split()
+    new_words = updated.split()
+
+    # Create a SequenceMatcher object to compare the two lists.
+    matcher = difflib.SequenceMatcher(None, old_words, new_words)
+    result = []
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == 'equal':
+            # Unchanged words; add them as they are.
+            result.extend(old_words[i1:i2])
+        elif tag == 'delete':
+            # Words deleted from the original: wrap in strikethrough.
+            result.append("~~" + " ".join(old_words[i1:i2]) + "~~")
+        elif tag == 'insert':
+            # Words added in the updated version: wrap in bold.
+            result.append("**" + " ".join(new_words[j1:j2]) + "**")
+        elif tag == 'replace':
+            # Words that have been replaced:
+            # Show the old words with strikethrough followed by new words in bold.
+            result.append("~~" + " ".join(old_words[i1:i2]) + "~~")
+            result.append("**" + " ".join(new_words[j1:j2]) + "**")
+
+    # Join the processed words back into a single string.
+    return " ".join(result)
 
 
 class OpenAIBasicAdvisor(LLMAdvisor):
@@ -20,6 +81,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         self.temperature = temperature
         self.chat_history: ChatHistory = []
         self.paragraphs: Dict[ParagraphID, ParagraphText] = {}
+        self.initial_context = None
 
     def _openai_call(self, messages: List[ChatMessage]) -> str:
         """
@@ -31,10 +93,31 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         )
         return response.choices[0].message.content.strip()
 
+    def add_initial_context(self, context: str) -> None:
+        """
+        With the first question we ask the user what the general goal of the project is.
+        """
+        self.initial_context = context
+
     def process_whole_text(self, text: Dict[ParagraphID, ParagraphText]) -> WholeTextAdvice:
         """
         Process the entire text and return advice for each paragraph.
         """
+        # sort text by the key
+        if not self.initial_context:
+            raise NotImplementedError("You must provide an initial context before processing the whole text.")
+            # extract initial context by summarizing the text
+            messages = [
+                {
+                    "role": "system",
+                    "content": "Please summarize the text in a few sentences.",
+                },
+                {
+                    "role": "user",
+                    "content": " ".join(text.values()),
+                }
+            ]
+            response_text = self._openai_call(messages)
         # Sort paragraphs by their id and build a single prompt.
         sorted_ids = sorted(text.keys())
         paragraphs_str = "\n".join(
@@ -54,6 +137,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         ]
 
         response_text = self._openai_call(messages)
+        response_text = clean_outputs(response_text)
         try:
             whole_advice = json.loads(response_text)
         except json.JSONDecodeError:
@@ -67,6 +151,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         """
         Process and add a single paragraph.
         """
+        assert self.initial_context, "You must provide an initial context before adding a paragraph."
         system_prompt = self.context_prompt + (
             "Analyze the following paragraph and provide constructive feedback. "
             "Return a JSON array of advice objects, where each object has keys 'extract' (a relevant excerpt) and "
@@ -79,6 +164,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         ]
 
         response_text = self._openai_call(messages)
+        response_text = clean_outputs(response_text)
         try:
             advice = json.loads(response_text)
         except json.JSONDecodeError:
@@ -109,6 +195,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         ]
 
         response_text = self._openai_call(messages)
+        response_text = clean_outputs(response_text)
         try:
             advice = json.loads(response_text)
         except json.JSONDecodeError:
@@ -144,6 +231,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
 
         messages = [{"role": "system", "content": system_prompt}] + self.chat_history
         response_text = self._openai_call(messages)
+        response_text = clean_outputs(response_text)
         try:
             response_json = json.loads(response_text)
         except json.JSONDecodeError:

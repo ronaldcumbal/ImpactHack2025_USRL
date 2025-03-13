@@ -11,6 +11,8 @@ CORS(app)  # Allow frontend requests
 # Temporary storage (in-memory)
 answers = {}
 chat_history = {}
+# used to store current chat on the right
+chat_id = {}
 
 @app.route("/")
 def landing_page():
@@ -60,15 +62,21 @@ def generate_feedback():
 
             highlight_list.append(para['extract'])
 
-    return jsonify({question_id: feedback_list}), 200
+    return jsonify({question_id: feedback_list, question_id+"_extracts": highlight_list}), 200
 
+@app.route('/set_chat_id', methods=['POST'])
+def set_chat_id():
+    global chat_id
+    data = request.json
+    question_id = data.get("question_id")
+    feedback_text = data.get("feedback_text")
+    chat_id = {"question_id": question_id, "feedback_text": feedback_text}
+    answer = agent.paragraph_reply(paragraph_id=question_id, paragraph_advice=feedback_text)
+    return jsonify(answer), 200
 
 @app.route('/chat', methods=['POST'])
 def chat():
     """Simple chatbot response logic. The response can go to the """
-
-    global chat_history
-    
     data = request.json
     message = data.get("message", "")
 
@@ -77,19 +85,12 @@ def chat():
 
     targets = ["chat"]  # Default to chat
 
-    if "[q1]" in message: 
-        chat_history={'paragraph_id': "q1", 'paragraph_advice': message.strip("[q1] ")}
-        response = "What is your question?"
-    elif "[q2]" in message: 
-        chat_history={'paragraph_id': "q2", 'paragraph_advice': message.strip("[q1] ")}
-        response = "What is your question?"
-    elif "[q3]" in message: 
-        chat_history={'paragraph_id': "q3", 'paragraph_advice': message.strip("[q1] ")}
-        response = "What is your question?"
-    else:
-        agent_response = agent.paragraph_reply(paragraph_id= chat_history['paragraph_id'], paragraph_advice= chat_history['paragraph_advice'], reply= message)
-        response = agent_response[-1]['content']
-
+    agent_response = agent.paragraph_reply(
+        paragraph_id=chat_id["question_id"],
+        paragraph_advice=chat_id["feedback_text"],
+        reply=message
+    )
+    return jsonify(agent_response), 200
     # # Determine where to send the response
     # if "hello" in message or "hi" in message:
     #     response = "Hello! How can I assist you today?" # Send only to Chat

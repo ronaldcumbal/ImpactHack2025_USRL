@@ -1,4 +1,5 @@
 from collections import OrderedDict, defaultdict
+from copy import deepcopy
 from os import environ
 from llm_interface import LLMAdvisor, ChatHistory, ChatMessage, WholeTextAdvice, ParagraphAdvice, ReplyResponse, ParagraphID, ParagraphText
 from typing import Dict, List, Union, Optional, Tuple
@@ -240,7 +241,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         # FIXME: update chat_history by poping the old paragraph and adding the new one
         return advice
 
-    def paragraph_reply(self, paragraph_id: ParagraphID, paragraph_advice: str, reply: str) -> ReplyResponse:
+    def paragraph_reply(self, paragraph_id: ParagraphID, paragraph_advice: str, reply: str = None) -> ReplyResponse:
         """
         Process the user's reply to a paragraph's feedback and return a chat history with the new response.
         If the user requested a change, also return an updated version of the paragraph.
@@ -259,6 +260,15 @@ class OpenAIBasicAdvisor(LLMAdvisor):
                 {"role": "user", "content": paragraph},
                 {"role": "assistant", "content": "Considering the following extract of your paragraph: " + extract + "\n" + paragraph_advice},
             ]
+        if reply is None:
+            to_return = deepcopy(base_history)
+            to_return[2]["content"] = paragraph_advice
+            for i in range(len(to_return)):
+                if to_return[i]["role"] == "assistant":
+                    to_return[i]["role"] = "Assistant"
+                elif to_return[i]["role"] == "user":
+                    to_return[i]["role"] = "You"
+            return to_return[2:]
         base_history.append({"role": "user", "content": reply})
 
         # system_prompt = (
@@ -288,6 +298,14 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         base_history.append(assistant_message)
         self.chat_history[paragraph_id][paragraph_advice] = base_history
 
+        to_return = deepcopy(base_history)
+        to_return[2]["content"] = paragraph_advice
+        for i in range(len(to_return)):
+            if to_return[i]["role"] == "assistant":
+                to_return[i]["role"] = "Assistant"
+            elif to_return[i]["role"] == "user":
+                to_return[i]["role"] = "You"
+        return to_return[2:]
         return base_history
         # # Update the paragraph if a new version was provided.
         # if updated_paragraph is not None:

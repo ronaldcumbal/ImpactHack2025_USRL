@@ -9,24 +9,34 @@
 <body>
     <div class="container">
         <h2>Complete the following questions:</h2>
-        <label for="context">Write short description of your project:</label>
+        <label for="context">Write short description of your project:</label>        
         <textarea id="context" name="context" rows="3" placeholder="Enter background information here..."></textarea>
 
         <!-- Question 1 -->
         <label for="q1">1. Please briefly describe what you as an organization want to achieve. This can be in the form of your organisation’s mission/vision statement or a few lines explaining the organisations’ purpose and values.</label>
-        <textarea id="q1" name="q1" rows="4">In Thailand and in lots of other places, there’s a huge problem where kids get taken away ...</textarea>
+        <div class="text_container" id="container-q1">
+            <div class="highlighter" id="highlighted-content-q1"></div>
+            <textarea id="q1" name="q1" rows="4">In Thailand and in lots of other places, there’s a huge problem where kids get taken away ...</textarea>
+        </div>
+
         <button type="button" onclick="evaluateAnswer('q1')">Evaluate</button>
         <div class="feedback-container" id="feedback-q1"></div>
 
         <!-- Question 2 -->
         <label for="q2">2. What are the problems(s) your project is trying to address? Give a clear context and show why your project is relevant. </label>
-        <textarea id="q2" name="q2" rows="4">There are supposedly more than 120,000 kids in Thailand living in different ...</textarea>
+        <div class="text_container"  id="container-q2">
+            <div class="highlighter" id="highlighted-content-q2"></div>
+            <textarea id="q2" name="q2" rows="4">There are supposedly more than 120,000 kids in Thailand living in different ...</textarea>
+        </div>
         <button type="button" onclick="evaluateAnswer('q2')">Evaluate</button>
         <div class="feedback-container" id="feedback-q2"></div>
 
         <!-- Question 3 -->
         <label for="q3">3. What are the objectives for the project in this grant period that will enable you to reach your goals and contribute to the longer-term impact?  </label>
-        <textarea id="q3" name="q3" rows="4">We want to make government understand that children and families need more money and support ... </textarea>
+        <div class="text_container"  id="container-q3">
+            <div class="highlighter" id="highlighted-content-q3"></div>
+            <textarea id="q3" name="q3" rows="4">We want to make government understand that children and families need more money and support ... </textarea>
+        </div>
         <button type="button" onclick="evaluateAnswer('q3')">Evaluate</button>
         <div class="feedback" id="feedback-q3"></div>
 

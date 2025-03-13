@@ -2,10 +2,40 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchAnswers(); // Load saved answers on page load
 });
 
+const colors = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b"];
+
+// Helper: escape HTML to prevent injection issues
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+}
+  
+// This function takes the raw text, the list of feedback segments, and the overlay element
+// It wraps each occurrence of the feedback segment with a <span> styled with a color.
+function updateOverlayHighlighting(text, feedbackList, overlayElement) {
+    // Start with an HTML-escaped version of the text
+    let escapedText = escapeHtml(text);
+    console.log("highlighting")
+    
+    feedbackList.forEach((feedback, index) => {
+        console.log("feedback:", feedback)
+        let color = colors[index % colors.length];
+        // Create a global, case-insensitive regex for the feedback segment.
+        const regex = new RegExp(feedback, "gi");
+        // Replace all occurrences with a span that has a background color.
+        escapedText = escapedText.replace(regex, match => `<span style="background-color: ${color};">${match}</span>`);
+    });
+
+    overlayElement.innerHTML = escapedText;
+}
+  
+
 function evaluateAnswer(questionId) {
     let answer = document.getElementById(questionId).value;
     let context = document.getElementById("context").value; // Get context input
     let feedbackContainer = document.getElementById("feedback-" + questionId);
+    let overlayElement = document.getElementById("highlighted-content-" + questionId);
 
     // Clear previous feedback
     feedbackContainer.innerHTML = "";
@@ -24,13 +54,50 @@ function evaluateAnswer(questionId) {
     .then(response => response.json())
     .then(data => {
         let feedbackList = data[questionId] || ["Error processing feedback."];
+        let highlightList = data[questionId+"_extracts"] || ["Error processing highlights."];
+        
+        // TESTING - Update the text overlay with highlighted feedback segments.
+        // updateOverlayHighlighting(answer, feedbackList, overlayElement);
 
         feedbackList.forEach(feedbackText => {
             let feedbackElement = document.createElement("div");
             feedbackElement.classList.add("feedback-item");
             feedbackElement.innerText = feedbackText;
             feedbackElement.onclick = function () {
-                document.getElementById("chat-input").value = `[${questionId}] ${feedbackText}`;
+                fetch("http://127.0.0.1:5000/set_chat_id", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        question_id: questionId,
+                        feedback_text: feedbackText
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // data is expected to be a list of objects with keys "role" and "content"
+                    let chatBox = document.getElementById("chat-box");
+                    
+                    // Optionally, clear previous messages in chat-box
+                    chatBox.innerHTML = "";
+
+                    data.forEach(item => {
+                        let messageDiv = document.createElement("div");
+
+                        // Create bold role element
+                        let roleElement = document.createElement("strong");
+                        roleElement.innerText = item.role + ": ";
+                        messageDiv.appendChild(roleElement);
+
+                        // Add the message content
+                        let contentText = document.createTextNode(item.content);
+                        messageDiv.appendChild(contentText);
+
+                        // Append the message div to chat-box
+                        chatBox.appendChild(messageDiv);
+                    });
+                })
             };
             feedbackContainer.appendChild(feedbackElement);
         });
@@ -81,31 +148,26 @@ function sendChatMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        let responseText = data.response;
-        let targets = data.target;
+        // data is expected to be a list of objects with keys "role" and "content"
+        let chatBox = document.getElementById("chat-box");
+            
+        // Optionally, clear previous messages in chat-box
+        chatBox.innerHTML = "";
 
-        if (!Array.isArray(targets)) {
-            targets = [targets];
-        }
+        data.forEach(item => {
+            let messageDiv = document.createElement("div");
 
-        targets.forEach(target => {
-            if (target.startsWith("feedback")) {
-                let feedbackContainer = document.getElementById(target);
-                if (feedbackContainer) {
-                    let feedbackElement = document.createElement("div");
-                    feedbackElement.classList.add("feedback-item");
-                    feedbackElement.innerText = responseText;
-                    feedbackElement.onclick = function () {
-                        document.getElementById("chat-input").value = `[${target}] ${responseText}`;
-                    };
-                    feedbackContainer.appendChild(feedbackElement);
-                }
-            } else if (target === "chat") {
-                let chatBox = document.getElementById("chat-box");
-                let newMessage = document.createElement("div");
-                newMessage.innerHTML = `<strong>You:</strong> ${message} <br> <strong>Agent:</strong> ${responseText}`;
-                chatBox.appendChild(newMessage);
-            }
+            // Create bold role element
+            let roleElement = document.createElement("strong");
+            roleElement.innerText = item.role + ": ";
+            messageDiv.appendChild(roleElement);
+
+            // Add the message content
+            let contentText = document.createTextNode(item.content);
+            messageDiv.appendChild(contentText);
+
+            // Append the message div to chat-box
+            chatBox.appendChild(messageDiv);
         });
 
         document.getElementById("chat-input").value = "";

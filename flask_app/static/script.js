@@ -174,23 +174,26 @@ function evaluateAnswer(questionId) {
 }
 
 function saveAllAnswers() {
-    let answers = {
-        q1: document.getElementById("q1").value,
-        q2: document.getElementById("q2").value
-    };
-
-    fetch("http://127.0.0.1:5000/save_answers", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(answers)
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("status").innerText = data.message;
-    })
-    .catch(error => console.error("Error:", error));
+    fetch("/generate_docx", { method: "POST" })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("Failed to generate document");
+            }
+            return response.blob();
+        })
+        .then(function (blob) {
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "generated_document.docx"; // Set the filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(function (error) {
+            console.error("Error:", error);
+        });
 }
 
 function fetchAnswers() {

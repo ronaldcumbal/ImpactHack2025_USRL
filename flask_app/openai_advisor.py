@@ -400,9 +400,16 @@ class OpenAIBasicAdvisor(LLMAdvisor):
 
     def get_whole_text(self) -> str:
         result = {}
+        whole_text = ""
+        comments = {}
         for id, text in self.paragraphs.items():
+            whole_text = whole_text + PARAGRAPH_CONTEXTS[id]["question"] + "\n" + text + "\n\n"
             result[PARAGRAPH_CONTEXTS[id]["question"]] = text
-        return result
+        
+        for id, advices in self.advices.items():
+            for advice, extract in advices.items():
+                comments[extract] = advice
+        return result, whole_text, comments
 
 if __name__ == "__main__":
     # tests

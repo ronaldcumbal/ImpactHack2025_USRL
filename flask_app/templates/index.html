@@ -10,15 +10,13 @@
     <div class="container">
         <h2>Complete the following questions:</h2>
         <label for="context">Write short description of your project:</label>        
-        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 1 Image">
         <textarea id="context" name="context" rows="3" placeholder="Enter background information here..."></textarea>
 
         <!-- Question 1 -->
-        <label for="q1">1. Please briefly describe what you as an organization want to achieve. This can be in the form of your organisation’s mission/vision statement or a few lines explaining the organisations’ purpose and values.</label>
-        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 1 Image">
+        <label for="q1">1. What specific problem does your project address? Provide context and evidence, such as research, policies, or strategies, to demonstrate its relevance.</label>
         <div class="text_container" id="container-q1">
             <div class="highlighter" id="highlighted-content-q1"></div>
-            <textarea id="q1" name="q1" rows="4">In Thailand and in lots of other places, there’s a huge problem where kids get taken away ...</textarea>
+            <textarea id="q1" name="q1" rows="4"></textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q1')">Evaluate</button>
         <button type="button" onclick="okayParagraph('q1')">I am okay with this paragraph</button>
@@ -30,14 +28,14 @@
         <div class="feedback-container" id="feedback-q1"></div>
 
         <!-- Question 2 -->
-        <label for="q2">2. What are the problems(s) your project is trying to address? Give a clear context and show why your project is relevant. </label>
-        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 1 Image">
+        <label for="q2">2. What long-term change do you aim to contribute to (impact)? What measurable outcomes do you hope to achieve by the end of the project (goals), and for whom? </label>
+        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 2 Image">
         <div class="text_container"  id="container-q2">
             <div class="highlighter" id="highlighted-content-q2"></div>
             <textarea id="q2" name="q2" rows="4">There are supposedly more than 120,000 kids in Thailand living in different ...</textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q2')">Evaluate</button>
-        <button type="button" onclick="okayParagraph('q1')">I am okay with this paragraph</button>
+        <button type="button" onclick="okayParagraph('q2')">I am okay with this paragraph</button>
         <br><br><label><i>Answer quality and feedback:</i></label>
         <div class="progress">
             <div id="progressBar-q2" class="progress-bar"></div>
@@ -46,25 +44,74 @@
         <div class="feedback-container" id="feedback-q2"></div>
 
         <!-- Question 3 -->
-        <label for="q3">3. What are the objectives for the project in this grant period that will enable you to reach your goals and contribute to the longer-term impact?  </label>
-        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 1 Image">
+        <label for="q3">3. List the project objectives for this grant period, the activities required to achieve them and indicators to measure signs of progress.</label>
+        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 3 Image">
         <div class="text_container"  id="container-q3">
             <div class="highlighter" id="highlighted-content-q3"></div>
             <textarea id="q3" name="q3" rows="4" placeholder="I want to make government understand that children and families need more money and support..."></textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q3')">Evaluate</button>
-        <button type="button" onclick="okayParagraph('q1')">I am okay with this paragraph</button>
+        <button type="button" onclick="okayParagraph('q3')">I am okay with this paragraph</button>
         <br><br><label><i>Answer quality and feedback:</i></label>
         <div class="progress">
             <div id="progressBar-q3" class="progress-bar"></div>
         </div>
-        <button type="button" onclick="evaluateAnswer('q3')">Evaluate</button>
-        <img id="loading-q2" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
-        <div class="feedback" id="feedback-q3"></div>
+        <img id="loading-q3" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
+        <div class="feedback-container" id="feedback-q3"></div>
 
-        <!-- Final submit button to save all answers -->
+        <!-- Question 4 -->
+        <label for="q4">4. What risks or challenges might affect the project's success? How will you address and mitigate them?</label>
+        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 4 Image">
+        <div class="text_container"  id="container-q4">
+            <div class="highlighter" id="highlighted-content-q4"></div>
+            <textarea id="q4" name="q4" rows="4" placeholder="I want to make government understand that children and families need more money and support..."></textarea>
+        </div>
+        <button type="button" onclick="evaluateAnswer('q4')">Evaluate</button>
+        <button type="button" onclick="okayParagraph('q4')">I am okay with this paragraph</button>
+        <br><br><label><i>Answer quality and feedback:</i></label>
+        <div class="progress">
+            <div id="progressBar-q4" class="progress-bar"></div>
+        </div>
+        <img id="loading-q4" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
+        <div class="feedback-container" id="feedback-q4"></div>
+
+
+        <!-- Question 5 -->
+        <label for="q5">5. How will you track project progress and measure success? Describe data collection methods, responsible parties, and how participants (including children) will be involved.</label>
+        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 5 Image">
+        <div class="text_container"  id="container-q5">
+            <div class="highlighter" id="highlighted-content-q5"></div>
+            <textarea id="q5" name="q5" rows="4" placeholder="I want to make government understand that children and families need more money and support..."></textarea>
+        </div>
+        <button type="button" onclick="evaluateAnswer('q5')">Evaluate</button>
+        <button type="button" onclick="okayParagraph('q5')">I am okay with this paragraph</button>
+        <br><br><label><i>Answer quality and feedback:</i></label>
+        <div class="progress">
+            <div id="progressBar-q5" class="progress-bar"></div>
+        </div>
+        <img id="loading-q5" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
+        <div class="feedback-container" id="feedback-q5"></div>
+
+
+
+        <!-- Question 6 -->
+        <label for="q6">6. How will the project's impact continue beyond the funding period? What are your plans for securing long-term sustainability, funding, or integration into existing systems?</label>
+        <img src="{{ url_for('static', filename='edit_bar.png') }}" class="question-image" alt="Question 6 Image">
+        <div class="text_container"  id="container-q6">
+            <div class="highlighter" id="highlighted-content-q6"></div>
+            <textarea id="q6" name="q6" rows="4" placeholder="I want to make government understand that children and families need more money and support..."></textarea>
+        </div>
+        <button type="button" onclick="evaluateAnswer('q6')">Evaluate</button>
+        <button type="button" onclick="okayParagraph('q6')">I am okay with this paragraph</button>
+        <br><br><label><i>Answer quality and feedback:</i></label>
+        <div class="progress">
+            <div id="progressBar-q6" class="progress-bar"></div>
+        </div>
+        <img id="loading-q6" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
+        <div class="feedback-container" id="feedback-q6"></div>
+
+
         <button class="save-button" type="button" onclick="saveAllAnswers()">Save All Answers</button>
-        <p id="status"></p>
     </div>
 
     <!-- Chat Window -->

@@ -65,7 +65,7 @@ def chat():
     global chat_history
     
     data = request.json
-    message = data.get("message", "").lower()
+    message = data.get("message", "")
 
     if not message:
         return jsonify({"response": "Please enter a message.", "target": "chat"}), 200
@@ -75,16 +75,17 @@ def chat():
     print(chat_history)
 
     if "[q1]" in message: 
-        chat_history={'paragraph_id': "q1", 'ParagraphText': message}
+        chat_history={'paragraph_id': "q1", 'paragraph_advice': message.strip("[q1] ")}
         response = "What is your question?"
     elif "[q2]" in message: 
-        chat_history={'paragraph_id': "q2", 'ParagraphText': message}
+        chat_history={'paragraph_id': "q2", 'paragraph_advice': message.strip("[q1] ")}
         response = "What is your question?"
     elif "[q3]" in message: 
-        chat_history={'paragraph_id': "q3", 'ParagraphText': message}
+        chat_history={'paragraph_id': "q3", 'paragraph_advice': message.strip("[q1] ")}
         response = "What is your question?"
     else:
-        response = agent.paragraph_reply(paragraph_id= chat_history['paragraph_id'], paragraph_advice= chat_history['paragraph_id'], reply= message)
+        agent_response = agent.paragraph_reply(paragraph_id= chat_history['paragraph_id'], paragraph_advice= chat_history['paragraph_advice'], reply= message)
+        response = agent_response[-1]['content']
 
     # # Determine where to send the response
     # if "hello" in message or "hi" in message:

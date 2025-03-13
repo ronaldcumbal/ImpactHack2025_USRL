@@ -152,13 +152,21 @@ function evaluateAnswer(questionId) {
         // Expecting data like: { "score": 0.75 }
         const score = data.score;
         const progressBar = document.getElementById('progressBar-' + questionId);
-        // only update the progress bar if the score is higher than the current score
-        // if (score > parseFloat(progressBar.style.width) / 100) {
-            // Update the width based on the score (0-1 -> 0-100%)
-            progressBar.style.width = (score * 100) + '%';
-            // Update the background color based on the score
-            progressBar.style.backgroundColor = getColor(score);
-        // }
+
+        if (progressBar) { // Ensure the element exists
+            // Get the actual width (computed styles)
+            const currentWidth = parseFloat(window.getComputedStyle(progressBar).width);
+            const parentWidth = parseFloat(window.getComputedStyle(progressBar.parentElement).width);
+            
+            // Convert to a 0-1 scale
+            const currentScore = currentWidth / parentWidth;
+
+            // Only update if the new score is higher
+            if (score > currentScore) {
+                progressBar.style.width = (score * 100) + '%';
+                progressBar.style.backgroundColor = getColor(score);
+            }
+        }
     })
     .catch(error => {
         console.error("Error:", error);

@@ -10,6 +10,7 @@ CORS(app)  # Allow frontend requests
 
 # Temporary storage (in-memory)
 answers = {}
+chat_history = {}
 
 @app.route("/")
 def index():
@@ -54,47 +55,50 @@ def generate_feedback():
 
             highlight_list.append(para['extract'])
 
-    # if "technology" in text.lower():
-    #     feedback_list.append("Consider discussing the impact of technology on society.")
-    
-    # if "ai" in text.lower():
-    #     feedback_list.append("You could mention some AI ethical concerns.")
-
     return jsonify({question_id: feedback_list}), 200
 
 
 @app.route('/chat', methods=['POST'])
 def chat():
     """Simple chatbot response logic. The response can go to the """
+
+    global chat_history
+    
     data = request.json
     message = data.get("message", "").lower()
 
     if not message:
         return jsonify({"response": "Please enter a message.", "target": "chat"}), 200
 
-    response = "That's interesting! Could you elaborate?"
     targets = ["chat"]  # Default to chat
 
+    print(chat_history)
 
+    if "[q1]" in message: 
+        chat_history={'paragraph_id': "q1", 'ParagraphText': message}
+        response = "What is your question?"
+    elif "[q2]" in message: 
+        chat_history={'paragraph_id': "q2", 'ParagraphText': message}
+        response = "What is your question?"
+    elif "[q3]" in message: 
+        chat_history={'paragraph_id': "q3", 'ParagraphText': message}
+        response = "What is your question?"
+    else:
+        response = agent.paragraph_reply(paragraph_id= chat_history['paragraph_id'], paragraph_advice= chat_history['paragraph_id'], reply= message)
 
-# paragraph_reply
+    # # Determine where to send the response
+    # if "hello" in message or "hi" in message:
+    #     response = "Hello! How can I assist you today?" # Send only to Chat
+    # if "feedback" in message or "evaluate" in message:
+    #     response = "Hello! How can I assist you today?"
+    #     targets =["feedback-q2"] # Send only to Question 2 feedback
+    # if "technology" in message:
+    #     response = "Technology is evolving rapidly! What specific aspect interests you?"
+    #     targets.append("feedback-q1")  # Also send to Question 1 feedback
+    # if "ai" in message:
+    #     response = "AI is transforming many industries. Do you think it will be beneficial?"
+    #     targets.append("feedback-q2")  # Also send to Question 2 feedback
 
-# reply to feedback
-# paragraph_reply(self, paragraph_id: ParagraphID, paragraph_extract: ParagraphText, reply: str) -
-
-
-    # Determine where to send the response
-    if "hello" in message or "hi" in message:
-        response = "Hello! How can I assist you today?" # Send only to Chat
-    if "feedback" in message or "evaluate" in message:
-        response = "Hello! How can I assist you today?"
-        targets =["feedback-q2"] # Send only to Question 2 feedback
-    if "technology" in message:
-        response = "Technology is evolving rapidly! What specific aspect interests you?"
-        targets.append("feedback-q1")  # Also send to Question 1 feedback
-    if "ai" in message:
-        response = "AI is transforming many industries. Do you think it will be beneficial?"
-        targets.append("feedback-q2")  # Also send to Question 2 feedback
 
     return jsonify({"response": response, "target": targets}), 200
 

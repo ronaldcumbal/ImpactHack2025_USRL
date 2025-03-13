@@ -30,7 +30,7 @@ function evaluateAnswer(questionId) {
             feedbackElement.classList.add("feedback-item");
             feedbackElement.innerText = feedbackText;
             feedbackElement.onclick = function () {
-                document.getElementById("chat-input").value = feedbackText;
+                document.getElementById("chat-input").value = `[${questionId}] ${feedbackText}`;
             };
             feedbackContainer.appendChild(feedbackElement);
         });
@@ -96,7 +96,7 @@ function sendChatMessage() {
                     feedbackElement.classList.add("feedback-item");
                     feedbackElement.innerText = responseText;
                     feedbackElement.onclick = function () {
-                        document.getElementById("chat-input").value = responseText;
+                        document.getElementById("chat-input").value = `[${target}] ${responseText}`;
                     };
                     feedbackContainer.appendChild(feedbackElement);
                 }

@@ -21,6 +21,7 @@
             <textarea id="q1" name="q1" rows="4">In Thailand and in lots of other places, there’s a huge problem where kids get taken away ...</textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q1')">Evaluate</button>
+        <img id="loading-q1" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
         <div class="feedback-container" id="feedback-q1"></div>
 
         <!-- Question 2 -->
@@ -31,6 +32,7 @@
             <textarea id="q2" name="q2" rows="4">There are supposedly more than 120,000 kids in Thailand living in different ...</textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q2')">Evaluate</button>
+        <img id="loading-q2" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
         <div class="feedback-container" id="feedback-q2"></div>
 
         <!-- Question 3 -->
@@ -41,6 +43,7 @@
             <textarea id="q3" name="q3" rows="4">We want to make government understand that children and families need more money and support ... </textarea>
         </div>
         <button type="button" onclick="evaluateAnswer('q3')">Evaluate</button>
+        <img id="loading-q3" class="loading-gif" src="{{ url_for('static', filename='loading.gif') }}" alt="Loading..." style="display:none;">
         <div class="feedback" id="feedback-q3"></div>
 
         <!-- Final submit button to save all answers -->

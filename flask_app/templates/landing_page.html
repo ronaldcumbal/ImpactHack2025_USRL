@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='styles_landing.css')}}">
+</head>
+<body>
+    <div class="landing-container">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <h1>Welcome to the Application Form</h1>
+        <p>Get insightful feedback on your responses and chat with our AI-powered assistant.</p>
+        <a href="{{ url_for('form_page') }}"><button>Start</button></a>
+    </div>
+</body>
+</html>

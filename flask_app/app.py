@@ -13,8 +13,13 @@ answers = {}
 chat_history = {}
 
 @app.route("/")
-def index():
+def landing_page():
+    return render_template("landing_page.html")
+
+@app.route('/form')
+def form_page():
     return render_template("index.html")
+
 
 @app.route('/save_answers', methods=['POST'])
 def save_answers():
@@ -71,8 +76,6 @@ def chat():
         return jsonify({"response": "Please enter a message.", "target": "chat"}), 200
 
     targets = ["chat"]  # Default to chat
-
-    print(chat_history)
 
     if "[q1]" in message: 
         chat_history={'paragraph_id': "q1", 'paragraph_advice': message.strip("[q1] ")}

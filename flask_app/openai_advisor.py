@@ -168,7 +168,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         system_prompt += "The question the user is trying to answer is: " + PARAGRAPH_CONTEXTS[paragraph_id]['question']
         system_prompt += "This is the context of the paragraph: " + PARAGRAPH_CONTEXTS[paragraph_id]['context'] 
         system_prompt += "Return only the score as a float."
-        system_prompt += "\n\nThis is the general outline of the project: " + self.initial_context
+        system_prompt += "\n\nThis is the general outline of the project (DO NOT SCORE THIS, only the paragraph): " + self.initial_context
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -203,7 +203,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
             "Return a JSON array of advice objects, where each object has keys 'extract' (a relevant excerpt) and "
             "'advice' (a suggestion for improvement). Output only valid JSON."
         )
-        system_prompt += "\n\nThis is the general outline of the project: " + self.initial_context
+        system_prompt += "\n\nThis is the general outline of the project (DO NOT COMMENT ON THIS, only on the paragraph): " + self.initial_context
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": paragraph},
@@ -259,7 +259,7 @@ class OpenAIBasicAdvisor(LLMAdvisor):
             "has been fixed and keeping advice that has not been addressed in the same wording, where each object has keys 'extract' and 'advice'. "
             "Output only valid JSON."
         )
-        system_prompt += "\n\nThis is the general outline of the project: " + self.initial_context
+        system_prompt += "\n\nThis is the general outline of the project (DO NOT COMMENT ON THIS, only on the paragraph): " + self.initial_context
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": merged_paragraph},
@@ -398,6 +398,11 @@ class OpenAIBasicAdvisor(LLMAdvisor):
         else:
             raise ValueError("Either 'paragraph_id' or 'paragraph_ids' must be provided.")
 
+    def get_whole_text(self) -> str:
+        result = {}
+        for id, text in self.paragraphs.items():
+            result[PARAGRAPH_CONTEXTS[id]["question"]] = text
+        return result
 
 if __name__ == "__main__":
     # tests
